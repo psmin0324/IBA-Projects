@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포켓몬 배틀</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-image: url('{{ url_for('static', filename='background.jpg') }}'); background-size: cover; background-position: center; color: white; }
+        .container { position: relative; width: 100%; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #battle-btn, #restart-btn { padding: 15px 30px; font-size: 20px; cursor: pointer; border: none; background: red; color: white; border-radius: 10px; margin-top: 10px; }
+        #restart-btn { display: none; background: blue; }
+        #log-container { display: none; width: 50%; background: rgba(0, 0, 0, 0.8); padding: 20px; border-radius: 10px; margin-top: 20px; text-align: left; }
+        #log { white-space: pre-line; font-size: 18px; color: white; overflow-y: auto; max-height: 300px; }
+        #winner { font-size: 24px; font-weight: bold; color: yellow; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button id="battle-btn">배틀 시작!</button>
+        <button id="restart-btn">다시 시작</button>
+        <div id="log-container">
+            <h2>배틀 결과</h2>
+            <div id="log"></div>
+            <div id="winner"></div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $("#battle-btn").click(function() {
+                $(this).hide();
+                $("#log-container").fadeIn();
+                $("#restart-btn").show();
+    
+                $.ajax({
+                    url: "/battle",
+                    method: "POST",
+                    contentType: "application/json",
+                    success: function(response) {
+                        let logMessages = response.log;
+                        let i = 0;
+    
+                        function showNextLog() {
+                            if (i < logMessages.length) {
+                                let logLine = logMessages[i];
+                                if (logLine.startsWith("<img")) {
+                                    $("#log").append(logLine); // 이미지 태그는 그대로 추가
+                                } else {
+                                    $("#log").append(`<p>${logLine}</p>`); // 일반 텍스트는 <p> 태그로 감싸서 추가
+                                }
+                                $("#log").scrollTop($("#log")[0].scrollHeight);
+                                i++;
+                                setTimeout(showNextLog, 1500);
+                            } else {
+                                $("#winner").html(`<h3> 승자: ${response.winner}!</h3>`);
+                            }
+                        }
+                        showNextLog();
+                    }
+                });
+            });
+    
+            $("#restart-btn").click(function() {
+                $("#log").empty();
+                $("#winner").empty();
+                $("#log-container").hide();
+                $("#restart-btn").hide();
+                $("#battle-btn").show();
+            });
+        });
+    </script>
+</body>
+</html>
